@@ -139,6 +139,29 @@ def forwardBFS(problem: Problem) -> list[Action]:
     """
     ### Your code here ###
 
+
+    init_state = problem.getStartState()
+    if problem.isGoalState(init_state):
+        return [] #no hubo acciones que realizar puesto que ya estaba en el estado meta
+
+    queue = [(init_state, [])]#contiene un plan vacio que es el que v a conter cd accion
+    visited = {init_state}
+    
+    problem._expanded = 0 
+    
+    for estado_actual, plan in queue:
+        problem._expanded += 1
+        for sig_est, accion, cost in problem.getSuccessors(estado_actual): #cost no se recorre porque es igua en cada accion
+            if sig_est not in visited:
+                nplan = plan + [accion]  # nplan es la lista que va a contener las acciones que cad aestado va ahaceindo para llegar al estado meta
+                visited.add(sig_est)
+                queue.append((sig_est, nplan))
+            
+                if problem.isGoalState(sig_est):
+                    return nplan 
+    
+    return [] #no hayc acciones 
+
     ### End of your code ###
 
 
