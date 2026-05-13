@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Callable
 
 from planning.pddl import (
@@ -8,7 +9,9 @@ from planning.pddl import (
     Problem,
     State,
     Objects,
+    apply_action,
     get_all_groundings,
+    get_applicable_actions,
 )
 from planning.utils import Queue, PriorityQueue
 from planning.heuristics import nullHeuristic
@@ -139,29 +142,27 @@ def forwardBFS(problem: Problem) -> list[Action]:
     """
     ### Your code here ###
 
-
     init_state = problem.getStartState()
     if problem.isGoalState(init_state):
-        return [] #no hubo acciones que realizar puesto que ya estaba en el estado meta
+        return []
 
-    queue = [(init_state, [])]#contiene un plan vacio que es el que v a conter cd accion
+    queue = deque()
+    queue.append((init_state, []))
     visited = {init_state}
-    
-    problem._expanded = 0 
-    
-    for estado_actual, plan in queue:
-        problem._expanded += 1
-        for sig_est, accion, cost in problem.getSuccessors(estado_actual): #cost no se recorre porque es igua en cada accion
-            if sig_est not in visited:
-                nplan = plan + [accion]  # nplan es la lista que va a contener las acciones que cad aestado va ahaceindo para llegar al estado meta
-                visited.add(sig_est)
-                queue.append((sig_est, nplan))
-            
-                if problem.isGoalState(sig_est):
-                    return nplan 
-    
-    return [] #no hayc acciones 
 
+    while queue:
+        state, plan = queue.popleft()
+        
+        # Usar getSuccessors, que ya tiene caché y solo calcula groundings una vez
+        for next_state, action, _ in problem.getSuccessors(state):
+            if next_state not in visited:
+                new_plan = plan + [action]
+                if problem.isGoalState(next_state):
+                    return new_plan
+                visited.add(next_state)
+                queue.append((next_state, new_plan))
+    
+    return []
     ### End of your code ###
 
 

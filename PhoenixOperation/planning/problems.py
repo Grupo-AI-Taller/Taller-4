@@ -20,17 +20,17 @@ class SimpleRescueProblem(Problem):
     Tip: The goal is a frozenset containing the single fluent ("Rescued", "patient_0").
          Use problem.isGoalState(state) to test whether a state satisfies the goal.
     """
-
     def __init__(self, layout: RescueLayout) -> None:
         initial_state, objects = build_initial_state(layout)
 
-        ### Your code here ###
-        
-        # Define the goal: patient_0 must be rescued.
-        # Tip: The goal is a frozenset of fluents that must all be True in the goal state.
-        goal = frozenset({("Rescued", "patient_0")})
-        ### End of your code ###
+        initial_state = set(initial_state)
+        for s in objects["supplies"]:
+            initial_state.add(("pickable", s))
+        for p in objects["patients"]:
+            initial_state.add(("pickable", p))
+        initial_state = frozenset(initial_state)
 
+        goal = frozenset({("Rescued", "patient_0")})
         super().__init__(initial_state, goal, DOMAIN, objects)
         self.layout = layout
 
@@ -50,18 +50,19 @@ class MultiRescueProblem(Problem):
     def __init__(self, layout: RescueLayout) -> None:
         initial_state, objects = build_initial_state(layout)
 
-        ### Your code here ###
-        # Define the goal: every patient must be rescued.
-        # Tip: Use a set comprehension over objects["patients"].
-        
-        set_g = {} #se crea un set vacio para ir agregadno cada paciente rescatado
-        
-        patients = objects["patients"]
-        for patient in patients:
-            set_g.add(("Rescued", patient))
-        goal = frozenset(set_g)
-        
-        ### End of your code ###
+        # Añadir fluentes pickable
+        initial_state = set(initial_state)
+        for s in objects["supplies"]:
+            initial_state.add(("pickable", s))
+        for p in objects["patients"]:
+            initial_state.add(("pickable", p))
+        initial_state = frozenset(initial_state)
+
+        # Construir goal: Rescued para cada paciente
+        goal_set = set()
+        for patient in objects["patients"]:
+            goal_set.add(("Rescued", patient))
+        goal = frozenset(goal_set)
 
         super().__init__(initial_state, goal, DOMAIN, objects)
         self.layout = layout
