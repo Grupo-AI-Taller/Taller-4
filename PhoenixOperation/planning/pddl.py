@@ -172,10 +172,7 @@ def is_applicable(state: State, action: Action) -> bool:
     Tip: frozenset supports the .issubset() method and the .isdisjoint() method.
     """
     ### Your code here ###
-    if (action.precond_pos.issubset(state) == True) and (action.precond_neg.isdisjoint(state) == True):
-        return True
-    else:        
-        return False
+    return action.precond_pos.issubset(state) and action.precond_neg.isdisjoint(state)
 ### End of your code ###
 
 
@@ -245,11 +242,12 @@ def get_applicable_actions(
          Or use get_all_groundings() and filter the results by applicability.
     """
     ### Your code here ###
-    groundings = get_all_groundings(domain, objects) #como retorna todas las combinaciones de acciones psoibles que se pueden realizar
-    acc_aplic = []
-    for action in groundings: #se verifica sicada una de las acciones es aplicable 
+
+    groundings = get_all_groundings(domain, objects)
+    applicable = []
+    for action in groundings:
         if is_applicable(state, action):
-            acc_aplic.append(action)
-    return acc_aplic
+            applicable.append(action)
+    return applicable
 
     ### End of your code ###

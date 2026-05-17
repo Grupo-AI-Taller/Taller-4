@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Callable
 
 from planning.pddl import (
@@ -8,7 +9,9 @@ from planning.pddl import (
     Problem,
     State,
     Objects,
+    apply_action,
     get_all_groundings,
+    get_applicable_actions,
 )
 from planning.utils import Queue, PriorityQueue
 from planning.heuristics import nullHeuristic
@@ -139,6 +142,27 @@ def forwardBFS(problem: Problem) -> list[Action]:
     """
     ### Your code here ###
 
+    init_state = problem.getStartState()
+    if problem.isGoalState(init_state):
+        return []
+
+    queue = deque()
+    queue.append((init_state, []))
+    visited = {init_state}
+
+    while queue:
+        state, plan = queue.popleft()
+        
+        # Usar getSuccessors, que ya tiene caché y solo calcula groundings una vez
+        for next_state, action, _ in problem.getSuccessors(state):
+            if next_state not in visited:
+                new_plan = plan + [action]
+                if problem.isGoalState(next_state):
+                    return new_plan
+                visited.add(next_state)
+                queue.append((next_state, new_plan))
+    
+    return []
     ### End of your code ###
 
 
@@ -163,10 +187,29 @@ def regress(goal_set: State, action: Action) -> State | None:
     Tip: Use frozenset operations: intersection (&), difference (-), union (|).
          Check relevance first, then check for contradictions, then compute.
     """
-    ### Your code here ###
+    add_list = frozenset(action.add_list)
+    del_list = frozenset(action.del_list)
+    pos_precond = frozenset(action.precond_pos)
+    
+    if not (add_list & goal_set):
+        return None
+    
+    if del_list & goal_set:
+        return None
+    
+    return (goal_set - add_list) | pos_precond
 
-    ### End of your code ###
-
+"Funciones adicionales que son añadidas por el equipo para mejorar la construcción del código de backwardSearch, aunque no sean requeridas en el talle."
+def is_dead_end(goal_set: State, initial_state: State, STATIC_PREDICATES: set) -> bool:
+        """Un subobjetivo es dead end si exige un predicado estático que no existe en el estado inicial."""
+        for fluent in goal_set:
+            if fluent[0] in STATIC_PREDICATES and fluent not in initial_state:
+                return True
+        return False
+    
+def goal_satisfied(goal_set: State, initial_state: State) -> bool:
+        """El estado inicial satisface el subobjetivo actual."""
+        return goal_set.issubset(initial_state)
 
 def backwardSearch(problem: Problem) -> list[Action]:
     """
@@ -186,9 +229,41 @@ def backwardSearch(problem: Problem) -> list[Action]:
          Skip subgoals that contain static predicates (MedicalPost, Adjacent,
          Pickable) that are false in the initial state — these are dead ends.
     """
-    ### Your code here ###
+    initial_state = problem.getStartState()
+    goal = problem.goal
+    STATIC_PREDICATES = {"MedicalPost", "Adjacent", "Pickable", "pickable"}
+    
+    if goal_satisfied(goal, initial_state):
+        return []
+    
+    all_actions = get_all_groundings(problem.domain, problem.objects)
+    
+    queue = deque()
+    queue.append((goal, []))
+    visited = {goal}
+    while queue:
+        current_goal, reverse_plan = queue.popleft()
+        for action in all_actions:
+            regressed = regress(current_goal, action)
 
-    ### End of your code ###
+            if regressed is None:
+                continue
+            if regressed in visited:
+                continue
+
+            if is_dead_end(regressed, initial_state, STATIC_PREDICATES):
+                continue
+
+            new_plan = [action] + reverse_plan
+            if goal_satisfied(regressed, initial_state):
+                return new_plan
+
+            visited.add(regressed)
+            queue.append((regressed, new_plan))
+
+    return []
+    
+    
 
 
 # ---------------------------------------------------------------------------
