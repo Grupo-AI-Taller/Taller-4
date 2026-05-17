@@ -54,12 +54,7 @@ class MultiRescueProblem(Problem):
         # Define the goal: every patient must be rescued.
         # Tip: Use a set comprehension over objects["patients"].
         
-        set_g = {} #se crea un set vacio para ir agregadno cada paciente rescatado
-        
-        patients = objects["patients"]
-        for patient in patients:
-            set_g.add(("Rescued", patient))
-        goal = frozenset(set_g)
+        goal = frozenset({("Rescued", patient) for patient in objects["patients"]})
         
         ### End of your code ###
 
