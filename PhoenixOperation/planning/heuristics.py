@@ -1,6 +1,6 @@
 from __future__ import annotations
-
-from planning.pddl import ActionSchema, State, Objects
+from math import inf
+from planning.pddl import ActionSchema, State, Objects, get_all_groundings, get_applicable_actions
 
 
 def nullHeuristic(
@@ -46,6 +46,39 @@ def ignorePreconditionsHeuristic(
     """
     ### Your code here ###
 
+    unsatisfied = frozenset(goal - state)
+
+    if not unsatisfied:
+        return 0
+
+    actions = get_all_groundings(domain, objects)
+
+    useful_covers = []
+    for action in actions:
+        cover = frozenset(action.add_list & unsatisfied)
+        if cover:
+            useful_covers.append(cover)
+
+    if not useful_covers:
+        return inf
+
+    queue = [(unsatisfied, 0)]
+    visited = {unsatisfied}
+
+    while queue:
+        remaining, cost = queue.pop(0)
+
+        if not remaining:
+            return cost
+
+        for cover in useful_covers:
+            new_remaining = frozenset(remaining - cover)
+
+            if new_remaining not in visited:
+                visited.add(new_remaining)
+                queue.append((new_remaining, cost + 1))
+
+    return inf
     ### End of your code ###
 
 
@@ -79,5 +112,58 @@ def ignoreDeleteListsHeuristic(
          each step (preconditions still apply in the relaxed model).
     """
     ### Your code here ###
+    relaxed_state = set(state)
 
+    if goal.issubset(relaxed_state):
+        return 0
+
+    actions = get_all_groundings(domain, objects)
+    steps = 0
+
+    while not goal.issubset(relaxed_state):
+        best_action = None
+        best_goal_gain = -1
+        best_total_gain = -1
+
+        current_goal_count = len(set(goal) & relaxed_state)
+
+        for action in actions:
+            preconditions_ok = action.precond_pos.issubset(relaxed_state)
+            negative_preconditions_ok = action.precond_neg.isdisjoint(relaxed_state)
+
+            if not preconditions_ok or not negative_preconditions_ok:
+                continue
+
+            added_fluents = set(action.add_list) - relaxed_state
+
+            if not added_fluents:
+                continue
+
+            next_state = relaxed_state | set(action.add_list)
+            next_goal_count = len(set(goal) & next_state)
+
+            goal_gain = next_goal_count - current_goal_count
+            total_gain = len(added_fluents)
+
+            if goal_gain > best_goal_gain:
+                best_goal_gain = goal_gain
+                best_total_gain = total_gain
+                best_action = action
+            elif goal_gain == best_goal_gain and total_gain > best_total_gain:
+                best_total_gain = total_gain
+                best_action = action
+
+        if best_action is None:
+            return inf
+
+        before_size = len(relaxed_state)
+        relaxed_state |= set(best_action.add_list)
+        after_size = len(relaxed_state)
+
+        if after_size == before_size:
+            return inf
+
+        steps += 1
+
+    return steps
     ### End of your code ###
