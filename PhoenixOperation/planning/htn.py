@@ -53,6 +53,52 @@ def hierarchicalSearch(problem: Problem, hlas: list[HLA]) -> list[Action]:
 
     Returns a list of primitive Action objects, or [] if no plan found.
     """
+    
+    '''
+    
+    Primera versión
+    
+    def hierarchicalSearch(problem: Problem, hlas: list[HLA]) -> list[Action]:
+    
+    queue = deque()
+    queue.append([hlas[0]])
+
+    while queue:
+        plan = queue.popleft()
+
+        if is_plan_primitive(plan):
+            state = problem.initial_state
+            valid = True
+            for action in plan:
+                if not is_applicable(state, action):
+                    valid = False
+                    break
+                state = apply_action(state, action)
+            
+            if valid and problem.isGoalState(state):
+                return plan
+        else:
+            for i in range(len(plan)):
+                step = plan[i]
+                if not is_primitive(step):
+                    for refinement in step.refinements:
+                        nuevo_plan = plan[:i] + [refinement] + plan[i + 1:]
+                        queue.append(nuevo_plan)
+                    break
+
+    return []
+    
+    Prompt utilizado:
+    "Estamos implementando un planificador HTN y nos trabamos en la función 
+    hierarchicalSearch. Estamos usando una cola para hacer BFS sobre los planes, 
+    pero cuando ejecutamos el codigo falla porque parece que las acciones se están 
+    anidando cuando sacamos los refinamientos, en vez de 
+    quedar como un solo arreglo plano
+    
+    Aquí está el código de la función. Creemos que el error está en la parte 
+    donde armamos el 'nuevo_plan' dentro del else. Ayúdame a mejorar y corregir el código."
+    '''
+    
     queue: deque = deque()
     queue.append(list(hlas[:1]))  # plan inicial: sólo la HLA raíz
 
